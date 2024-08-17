@@ -3,6 +3,7 @@ name = "TransJLC"
 version = "0.2.0"
 authors = ["HalfSweet <HalfSweet@HalfSweet.cn>"]
 edition = "2021"
+repository = "https://github.com/HalfSweet/TransJLC"
 
 license = "MIT"
 description = "TransJLC is a tool for converting Gerber files from other EDAs to JLCEDA style"
