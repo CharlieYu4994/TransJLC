@@ -1,0 +1,40 @@
+_version: 2
+root_about:
+  zh/CN: "TransJLC 是一个开源的，基于 Rust 语言构建的一款跨平台将其它类型的 Gerber 文件转为 JLCEDA 格式的工具"
+  en: "TransJLC is an open-source tool that converts other types of Gerber files to JLCEDA format, built in Rust language."
+  ja: "TransJLC は、他のタイプのガーバーファイルを JLCEDA 形式に変換するオープンソースツールで、Rust言語で構築されています。"
+
+root_language_help:
+  zh/CN: "设置语言"
+  en: "Set language"
+  ja: "言語を設定する"
+
+root_EDA_help:
+  zh/CN: "设置 EDA 工具类型"
+  en: "Set EDA tool type"
+  ja: "EDA ツールタイプを設定する"
+
+root_path_help:
+  zh/CN: "设置需要转换的文件路径"
+  en: "Set the path of the file to be converted"
+  ja: "変換するファイルのパスを設定する"
+
+root_output_path_help:
+  zh/CN: "设置输出文件路径"
+  en: "Set the output file path"
+  ja: "出力ファイルパスを設定する"
+
+root_zip_help:
+  zh/CN: "是否需要压缩为 zip 文件"
+  en: "Whether to compress to a zip file"
+  ja: "zip ファイルに圧縮するかどうか"
+
+copy_file_log:
+  zh/CN: "已经将文件 %{path} 复制到了 %{output_path}"
+  en: "The file %{path} has been copied to %{output_path}"
+  ja: "ファイル %{path} は %{output_path} にコピーされました"
+  
+success_log:
+  zh/CN: "转换成功"
+  en: "Conversion successful"
+  ja: "変換に成功しました"
