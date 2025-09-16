@@ -136,12 +136,12 @@ impl JlcTrait for JLC {
         }
 
         for file in files {
-            if let Some(style) = style {
+            if let Some(file_style) = style {
                 if file.is_file() {
                     // 匹配文件名
                     let file_name = file.file_name().unwrap().to_str().unwrap();
                     // 遍历style的所有字段
-                    for (key, value) in style.clone() {
+                    for (key, value) in file_style.clone() {
                         if key == "null" {
                             continue;
                         }
@@ -207,6 +207,14 @@ impl JlcTrait for JLC {
                                     temp
                                 );
 
+                                // 对KiCad风格的文件进行Dx*到G54Dx*的转换
+                                let is_kicad = matches!(self.eda, EDA::Kicad) || 
+                                               (matches!(self.eda, EDA::Auto) && 
+                                                file_style.EDA_Name == "KiCad");
+                                if is_kicad {
+                                    temp = self.convert_kicad_aperture_format(temp);
+                                }
+
                                 // 对Gerber文件添加哈希孔径（跳过钻孔文件）
                                 if !SKIP_KEYS.contains(&key) {
                                     temp = self.add_hash_aperture_to_gerber(temp)?;
@@ -257,6 +265,27 @@ impl JLC {
     pub fn normalize_line_endings(&self, content: String) -> String {
         // 先统一为LF，再转换为CRLF
         content.replace("\r\n", "\n").replace('\n', "\r\n")
+    }
+
+    /// 为KiCad风格文件转换Dx*格式为G54Dx*格式
+    pub fn convert_kicad_aperture_format(&self, content: String) -> String {
+        // 使用正则表达式匹配独立的Dx*格式（不是%ADD或G54D开头的）
+        // 匹配以D开头，后面跟数字，然后跟*号结尾的模式，但不匹配%ADD或G54D开头的行
+        let aperture_regex = regex::Regex::new(r"(?m)^((?!%ADD|G54D).*)?(D\d{2,4}\*)(.*)$").unwrap();
+        
+        aperture_regex.replace_all(&content, |caps: &regex::Captures| {
+            let before = caps.get(1).map_or("", |m| m.as_str());
+            let aperture = &caps[2]; // Dx*
+            let after = caps.get(3).map_or("", |m| m.as_str());
+            
+            // 如果这行已经包含G54D，就不要修改
+            if before.contains("G54D") {
+                caps[0].to_string()
+            } else {
+                // 将Dx*替换为G54Dx*
+                format!("{}G54{}{}", before, aperture, after)
+            }
+        }).to_string()
     }
 
     /// 向Gerber文件添加哈希孔径，用作文件指纹
