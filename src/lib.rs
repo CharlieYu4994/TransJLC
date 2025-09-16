@@ -40,6 +40,9 @@ pub trait JlcTrait {
 
     /// 将处理之后的文件打包为zip文件
     fn zip_file(&mut self, name: &str) -> Result<(), std::io::Error>;
+
+    /// 完成最终输出：如果需要ZIP则只输出ZIP包，否则输出所有Gerber文件
+    fn finalize_output(&mut self, create_zip: bool, zip_name: &str) -> Result<(), std::io::Error>;
 }
 
 pub struct JLC {
@@ -84,13 +87,15 @@ impl JlcTrait for JLC {
             std::io::ErrorKind::NotFound,
             "File not found",
         ))?;
-        // 把这个文件写到指定的路径
+        // 把这个文件写到工作目录
+        let working_dir = self.get_working_dir();
+        std::fs::create_dir_all(&working_dir)?;
         std::fs::write(
-            std::path::Path::new(&self.output_path).join(NAME),
+            working_dir.join(NAME),
             content.data.as_ref(),
         )?;
         self.process_path
-            .push(std::path::Path::new(&self.output_path).join(NAME));
+            .push(working_dir.join(NAME));
         Ok(())
     }
 
@@ -174,13 +179,13 @@ impl JlcTrait for JLC {
                                             .replace("{0}", num.to_string().as_str())
                                             .replace("{1}", num.to_string().as_str());
 
-                                        let file_path = std::path::Path::new(&self.output_path)
+                                        let file_path = self.get_working_dir()
                                             .join(new_file_name);
                                         file_path
                                     }
 
                                     _ => {
-                                        let file_path = std::path::Path::new(&self.output_path)
+                                        let file_path = self.get_working_dir()
                                             .join(JLC_STYLE.get(key).unwrap());
                                         file_path
                                     }
@@ -189,6 +194,10 @@ impl JlcTrait for JLC {
                             }
 
                             for file_path in &file_paths {
+                                // 确保目录存在
+                                if let Some(parent) = file_path.parent() {
+                                    std::fs::create_dir_all(parent)?;
+                                }
                                 std::fs::copy(file.clone(), file_path.clone())?;
                             }
 
@@ -242,6 +251,9 @@ impl JlcTrait for JLC {
     }
 
     fn zip_file(&mut self, name: &str) -> Result<(), std::io::Error> {
+        // 确保输出目录存在
+        std::fs::create_dir_all(&self.output_path)?;
+        
         let zip_file = std::path::Path::new(&self.output_path).join(name.to_owned() + ".zip");
         let mut zip = zip::ZipWriter::new(std::fs::File::create(zip_file)?);
 
@@ -257,6 +269,23 @@ impl JlcTrait for JLC {
         }
 
         zip.finish()?;
+        Ok(())
+    }
+
+    fn finalize_output(&mut self, create_zip: bool, zip_name: &str) -> Result<(), std::io::Error> {
+        if create_zip {
+            // 如果需要ZIP，只创建ZIP文件
+            self.zip_file(zip_name)?;
+        } else {
+            // 如果不需要ZIP，复制所有处理过的文件到最终输出目录
+            std::fs::create_dir_all(&self.output_path)?;
+            
+            for file in &self.process_path {
+                let file_name = file.file_name().unwrap();
+                let dest_path = std::path::Path::new(&self.output_path).join(file_name);
+                std::fs::copy(file, dest_path)?;
+            }
+        }
         Ok(())
     }
 }
@@ -332,6 +361,15 @@ impl JLC {
                 format!("{}G54{}{}", before, aperture, after)
             }
         }).to_string()
+    }
+
+    /// 获取工作目录（临时目录优先，否则使用输出目录）
+    fn get_working_dir(&self) -> PathBuf {
+        if let Some(ref temp_dir) = self.temp_dir {
+            temp_dir.path().to_path_buf()
+        } else {
+            PathBuf::from(&self.output_path)
+        }
     }
 
     /// 向Gerber文件添加哈希孔径，用作文件指纹

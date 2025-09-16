@@ -56,9 +56,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     jlc.copy_file()?;
 
-    if trans_jlc.zip {
-        jlc.zip_file(trans_jlc.zip_name.as_str())?;
-    }
+    // 使用新的finalize_output方法处理最终输出
+    jlc.finalize_output(trans_jlc.zip, trans_jlc.zip_name.as_str())?;
     
     println!("{}", t!("success_log"));
 
