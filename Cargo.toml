@@ -1,6 +1,6 @@
 [package]
 name = "TransJLC"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["HalfSweet <HalfSweet@HalfSweet.cn>"]
 edition = "2021"
 repository = "https://github.com/HalfSweet/TransJLC"
