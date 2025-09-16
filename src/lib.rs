@@ -60,6 +60,9 @@ pub struct JLC {
 
     /// 是否为导入的PCB文档
     pub is_imported_pcb_doc: bool,
+
+    /// 临时目录（用于解压ZIP文件）
+    pub temp_dir: Option<tempfile::TempDir>,
 }
 
 impl JlcTrait for JLC {
@@ -71,6 +74,7 @@ impl JlcTrait for JLC {
             process_path: vec![],
             ignore_hash: false,
             is_imported_pcb_doc: false,
+            temp_dir: None,
         }
     }
 
@@ -220,9 +224,6 @@ impl JlcTrait for JLC {
                                     temp = self.add_hash_aperture_to_gerber(temp)?;
                                 }
 
-                                // 统一处理换行符为CRLF
-                                // temp = self.normalize_line_endings(temp);
-
                                 std::fs::write(&file_path, temp)?;
                                 
                                 // 将处理之后的文件路径保存到process_path
@@ -261,10 +262,55 @@ impl JlcTrait for JLC {
 }
 
 impl JLC {
-    /// 统一处理换行符为CRLF格式
-    pub fn normalize_line_endings(&self, content: String) -> String {
-        // 先统一为LF，再转换为CRLF
-        content.replace("\r\n", "\n").replace('\n', "\r\n")
+    /// 检查路径是否为ZIP文件，如果是则解压到临时目录
+    pub fn extract_zip_if_needed(&mut self) -> Result<(), std::io::Error> {
+        let path = std::path::Path::new(&self.path);
+        
+        // 检查是否为文件且具有.zip扩展名
+        if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("zip") {
+            println!("Detected ZIP file, extracting to temporary directory...");
+            
+            // 创建临时目录
+            let temp_dir = tempfile::TempDir::new()?;
+            let temp_path = temp_dir.path();
+            
+            // 打开ZIP文件
+            let file = std::fs::File::open(&self.path)?;
+            let mut archive = zip::ZipArchive::new(file)
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+            
+            // 解压所有文件
+            for i in 0..archive.len() {
+                let mut file = archive.by_index(i)
+                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+                
+                let outpath = temp_path.join(file.name());
+                
+                if file.name().ends_with('/') {
+                    // 创建目录
+                    std::fs::create_dir_all(&outpath)?;
+                } else {
+                    // 创建父目录（如果需要）
+                    if let Some(p) = outpath.parent() {
+                        if !p.exists() {
+                            std::fs::create_dir_all(p)?;
+                        }
+                    }
+                    
+                    // 解压文件
+                    let mut outfile = std::fs::File::create(&outpath)?;
+                    std::io::copy(&mut file, &mut outfile)?;
+                }
+            }
+            
+            // 更新路径为临时目录
+            self.path = temp_path.to_string_lossy().to_string();
+            self.temp_dir = Some(temp_dir);
+            
+            println!("ZIP file extracted to: {}", self.path);
+        }
+        
+        Ok(())
     }
 
     /// 为KiCad风格文件转换Dx*格式为G54Dx*格式

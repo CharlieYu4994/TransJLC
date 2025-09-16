@@ -16,6 +16,7 @@ dependencies = [
  "regex",
  "rust-embed",
  "rust-i18n",
+ "tempfile",
  "whoami",
  "zip",
 ]

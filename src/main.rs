@@ -45,11 +45,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let eda = match trans_jlc.EDA.to_lowercase().as_str() {
         "auto" => TransJLC::EDA::Auto,
         "protel" => TransJLC::EDA::Protel,
-        "kciad" => TransJLC::EDA::Kicad,
+        "kicad" => TransJLC::EDA::Kicad,
         _ => TransJLC::EDA::Custom(trans_jlc.EDA.clone()),
     };
 
     let mut jlc = JLC::new(path, output, eda);
+    
+    // 检查是否为ZIP文件，如果是则解压
+    jlc.extract_zip_if_needed()?;
+    
     jlc.copy_file()?;
 
     if trans_jlc.zip {
@@ -57,7 +61,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     
     println!("{}", t!("success_log"));
-    println!("Hash aperture functionality has been integrated into the file processing.");
 
     Ok(())
 }
