@@ -57,6 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     
     println!("{}", t!("success_log"));
+    println!("Hash aperture functionality has been integrated into the file processing.");
 
     Ok(())
 }
