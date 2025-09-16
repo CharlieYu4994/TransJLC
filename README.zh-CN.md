@@ -83,3 +83,7 @@ TransJLC -p="D:\Projects\MyPCB\Gerber" -o="D:\Projects\MyPCB\Output" -z=true -n=
 ## 📄 许可证
 
 该项目采用 Apache-2.0 许可证。详情请参阅 [LICENSE](LICENSE) 文件。
+
+## 版权声明
+
+本项目不建议任何方式进行任何形式商用！其中的代码仅用于学习和研究，禁止用于任何商业目的，也禁止用于伤害深圳嘉立创科技集团股份有限公司。其中`lceda` `立创EDA` `嘉立创EDA` `嘉立创`等均属于深圳嘉立创科技集团股份有限公司所注册商标，请注意使用。

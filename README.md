@@ -81,3 +81,7 @@ Contributions, issues, and feature requests are welcome! Feel free to check the 
 ## 📄 License
 
 This project is licensed under the Apache-2.0 License. See the [LICENSE](LICENSE) file for details.
+
+## Copyright Notice
+
+This project is not recommended in any way for any kind of commercial use! The code in it is only used for study and research, it is forbidden to use it for any commercial purpose, and also forbidden to use it to harm Shenzhen Jialichuang Technology Group Co. Which `lceda` `Lichuang EDA` `Jialichuang EDA` `Jialichuang` and so on belong to Shenzhen Jialichuang Science and Technology Group Co.
