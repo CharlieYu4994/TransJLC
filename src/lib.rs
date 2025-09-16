@@ -212,6 +212,9 @@ impl JlcTrait for JLC {
                                     temp = self.add_hash_aperture_to_gerber(temp)?;
                                 }
 
+                                // 统一处理换行符为CRLF
+                                temp = self.normalize_line_endings(temp);
+
                                 std::fs::write(&file_path, temp)?;
                                 
                                 // 将处理之后的文件路径保存到process_path
@@ -250,6 +253,12 @@ impl JlcTrait for JLC {
 }
 
 impl JLC {
+    /// 统一处理换行符为CRLF格式
+    pub fn normalize_line_endings(&self, content: String) -> String {
+        // 先统一为LF，再转换为CRLF
+        content.replace("\r\n", "\n").replace('\n', "\r\n")
+    }
+
     /// 向Gerber文件添加哈希孔径，用作文件指纹
     pub fn add_hash_aperture_to_gerber(&self, content: String) -> Result<String, std::io::Error> {
         use md5::{Md5, Digest};
@@ -260,7 +269,9 @@ impl JLC {
             return Ok(content);
         }
 
-        let lines: Vec<&str> = content.split('\n').collect();
+        // 统一换行符为LF进行处理
+        let normalized_content = content.replace("\r\n", "\n");
+        let lines: Vec<&str> = normalized_content.split('\n').collect();
         let aperture_regex = regex::Regex::new(r"^%ADD(\d{2,4})\D.*").unwrap();
         let aperture_macro_regex = regex::Regex::new(r"^%AD|^%AM").unwrap();
         
@@ -317,7 +328,7 @@ impl JLC {
 
         // 重新编号现有孔径（将大于等于target_number的孔径编号加1）
         let aperture_renumber_regex = regex::Regex::new(r"^(%ADD|G54D)(\d{2,4})(\D)").unwrap();
-        let renumbered_content = aperture_renumber_regex.replace_all(&content, |caps: &regex::Captures| {
+        let renumbered_content = aperture_renumber_regex.replace_all(&normalized_content, |caps: &regex::Captures| {
             let prefix = &caps[1];
             let number: u32 = caps[2].parse().unwrap_or(0);
             let suffix = &caps[3];
