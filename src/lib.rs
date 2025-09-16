@@ -200,9 +200,9 @@ impl JlcTrait for JLC {
 
                             for file_path in &file_paths {
                                 // 在复制之后的文件的头部插入一些信息
-                                let mut temp = std::fs::read_to_string(&file_path)?;
+                                let mut temp = std::fs::read_to_string(&file_path)?.replace("\r\n", "\n");
                                 temp = format!(
-                                    "G04 EasyEDA Pro v2.1.61, {}*\nG04 Gerber Generator version 0.3*{}",
+                                    "G04 EasyEDA Pro v2.2.42.2, {}*\nG04 Gerber Generator version 0.3*\n{}",
                                     now.format("%Y-%m-%d %H:%M:%S"),
                                     temp
                                 );
@@ -213,7 +213,7 @@ impl JlcTrait for JLC {
                                 }
 
                                 // 统一处理换行符为CRLF
-                                temp = self.normalize_line_endings(temp);
+                                // temp = self.normalize_line_endings(temp);
 
                                 std::fs::write(&file_path, temp)?;
                                 
@@ -269,9 +269,7 @@ impl JLC {
             return Ok(content);
         }
 
-        // 统一换行符为LF进行处理
-        let normalized_content = content.replace("\r\n", "\n");
-        let lines: Vec<&str> = normalized_content.split('\n').collect();
+        let lines: Vec<&str> = content.split('\n').collect();
         let aperture_regex = regex::Regex::new(r"^%ADD(\d{2,4})\D.*").unwrap();
         let aperture_macro_regex = regex::Regex::new(r"^%AD|^%AM").unwrap();
         
@@ -327,8 +325,8 @@ impl JLC {
         };
 
         // 重新编号现有孔径（将大于等于target_number的孔径编号加1）
-        let aperture_renumber_regex = regex::Regex::new(r"^(%ADD|G54D)(\d{2,4})(\D)").unwrap();
-        let renumbered_content = aperture_renumber_regex.replace_all(&normalized_content, |caps: &regex::Captures| {
+        let aperture_renumber_regex = regex::Regex::new(r"(?m)^(%ADD|G54D)(\d{2,4})(.*)$").unwrap();
+        let renumbered_content = aperture_renumber_regex.replace_all(&content, |caps: &regex::Captures| {
             let prefix = &caps[1];
             let number: u32 = caps[2].parse().unwrap_or(0);
             let suffix = &caps[3];
@@ -340,7 +338,8 @@ impl JLC {
             }
         }).to_string();
 
-        // 生成哈希孔径定义
+        // 生成哈希孔径定义 - 需要转换为CRLF格式进行哈希计算
+        // let renumbered_content_crlf = renumbered_content.replace('\n', "\r\n");
         let hash_content = if self.is_imported_pcb_doc {
             format!("494d{}", renumbered_content)
         } else {
@@ -349,7 +348,7 @@ impl JLC {
 
         // 计算MD5哈希
         let mut hasher = Md5::new();
-        hasher.update(hash_content.as_bytes());
+        hasher.update(hash_content.as_str());
         let hash_result = hasher.finalize();
         let hash_hex = format!("{:x}", hash_result);
 
@@ -377,7 +376,7 @@ impl JLC {
         };
 
         // 插入哈希孔径到合适位置
-        let next_aperture_pattern = format!(r"^%ADD{}(\D)", target_number + 1);
+        let next_aperture_pattern = format!(r"(?m)^%ADD{}(\D)", target_number + 1);
         let next_aperture_regex = regex::Regex::new(&next_aperture_pattern).unwrap();
 
         let result = if next_aperture_regex.is_match(&renumbered_content) {
