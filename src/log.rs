@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 HalfSweet
+// SPDX-License-Identifier: Apache-2.0
+
 use colored::{Color, Colorize};
 use lazy_static::lazy_static;
 

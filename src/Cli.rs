@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 HalfSweet
+// SPDX-License-Identifier: Apache-2.0
+
 use clap::{Arg, ArgMatches, ColorChoice, Command, value_parser};
 use clap::builder::styling;
 use rust_i18n::t;
